@@ -67,6 +67,8 @@ def _citation_network_figure(graph, clusters):
 
 st.set_page_config(page_title="Citation & Editorial Integrity", layout="wide")
 
+APP_VERSION = "1.2 — Scopus References support"
+
 st.title("🔎 Citation & Editorial Integrity Analyzer")
 st.caption(
     "Screen journals for citation cartels, self-citation inflation, coercive "
@@ -78,6 +80,7 @@ st.caption(
 # Sidebar: data input
 # --------------------------------------------------------------------------- #
 with st.sidebar:
+    st.caption(f"Build {APP_VERSION}")
     st.header("1 · Citations data")
     st.markdown(
         "CSV with at least **citing_journal** and **cited_journal**. "
