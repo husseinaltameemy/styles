@@ -11,7 +11,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from integrity import cartels, coercion, loaders, report, retractions, self_citation
+from integrity import cartels, coercion, loaders, report, retractions, scorecard, self_citation
 
 
 def _citations() -> pd.DataFrame:
@@ -75,6 +75,27 @@ def test_retraction_classification():
     # Honest error must be low severity and not an editorial failure.
     classified = res["classified"].set_index("doi")
     assert classified.loc["10.0000/ms.001", "category"] == "error"
+
+
+def test_scorecard_ranks_journals():
+    cits = _citations()
+    rets = _retractions()
+    card = scorecard.build(
+        cartels.analyze(cits),
+        self_citation.analyze(cits),
+        coercion.analyze(cits),
+        retractions.analyze(rets),
+    )
+    assert not card.empty
+    assert {"journal", "concern_level", "concern_score", "flags"} <= set(card.columns)
+    assert card["concern_score"].max() <= 1.0
+    # Predatory Gamma Letters should carry an editorial-failure flag.
+    pg = card.set_index("journal").loc["Predatory Gamma Letters"]
+    assert "editorial failure" in pg["flags"]
+    # Rows are sorted High -> Low concern.
+    order = {"High": 0, "Elevated": 1, "Watch": 2, "Low": 3}
+    levels = [order[v] for v in card["concern_level"]]
+    assert levels == sorted(levels)
 
 
 def test_report_builds():

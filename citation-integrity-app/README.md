@@ -15,7 +15,13 @@ flags** from citation and retraction data:
    *editorial-process* failures (paper mills, faked/compromised peer review,
    data fabrication) versus isolated author errors.
 
-It also produces a **downloadable Markdown report** summarizing all findings.
+On top of these it produces:
+
+- a consolidated **Integrity Scorecard** — every journal ranked by an overall
+  *concern level* (High / Elevated / Watch / Low) with the specific flags it
+  tripped, downloadable as CSV;
+- an interactive **citation-network graph** with cartel members highlighted;
+- a **downloadable Markdown report** summarizing all findings.
 
 > ⚠️ Every metric here is a **screening indicator** to guide further
 > investigation — none is proof of misconduct.
@@ -29,6 +35,23 @@ streamlit run app.py
 ```
 
 Then tick **Use bundled sample data** in the sidebar, or upload your own CSVs.
+Start on the **🏅 Scorecard** tab for the at-a-glance ranking.
+
+## Run it without a terminal (deploy to the web)
+
+To get a permanent URL you can open from any browser — no Python install:
+
+1. Make sure this folder is pushed to GitHub (it is, on branch
+   `claude/confident-cori-0h1g3v`).
+2. Go to **https://share.streamlit.io** and sign in with GitHub.
+3. Click **Create app** → **Deploy a public app from GitHub** and select:
+   - **Repository:** `husseinaltameemy/styles`
+   - **Branch:** `claude/confident-cori-0h1g3v`
+   - **Main file path:** `citation-integrity-app/app.py`
+4. Click **Deploy**. Streamlit installs `requirements.txt` automatically and
+   gives you a shareable `https://…streamlit.app` link.
+
+Updates pushed to the branch redeploy automatically.
 
 ## Input formats
 
@@ -85,6 +108,7 @@ citation-integrity-app/
 │   ├── self_citation.py    # self-citation rates & trends
 │   ├── coercion.py         # coercive-citation risk heuristics
 │   ├── retractions.py      # retraction-reason classification & scoring
+│   ├── scorecard.py        # consolidated per-journal concern ranking
 │   ├── report.py           # Markdown report builder
 │   └── sources.py          # optional online sources (Retraction Watch, OpenAlex)
 ├── sample_data/            # example citations.csv & retractions.csv

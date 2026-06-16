@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from datetime import date
 
+from . import scorecard as _scorecard
+
 
 def _fmt_list(items: list[str], limit: int = 10) -> str:
     if not items:
@@ -44,6 +46,20 @@ def build_report(
     else:
         lines.append("No journals raised integrity flags in the supplied data.")
     lines.append("")
+
+    # --- Scorecard -----------------------------------------------------------
+    card = _scorecard.build(cartel, selfcite, coercion, retraction)
+    if not card.empty:
+        lines.append("## Integrity scorecard")
+        lines.append("Journals ranked by overall concern (higher = more concern).")
+        lines.append("")
+        lines.append("| Journal | Level | Score | Flags |")
+        lines.append("|---|---|---|---|")
+        for r in card.head(10).itertuples(index=False):
+            lines.append(
+                f"| {r.journal} | {r.concern_level} | {r.concern_score} | {r.flags} |"
+            )
+        lines.append("")
 
     # --- Citation cartels ----------------------------------------------------
     if cartel is not None:
