@@ -1,0 +1,22 @@
+citing_journal,cited_journal,year,count,citing_author
+Journal of Alpha Studies,Journal of Beta Research,2021,40,A. Smith
+Journal of Beta Research,Journal of Alpha Studies,2021,38,B. Jones
+Journal of Alpha Studies,Journal of Beta Research,2022,55,A. Smith
+Journal of Beta Research,Journal of Alpha Studies,2022,52,B. Jones
+Journal of Alpha Studies,Journal of Alpha Studies,2021,10,A. Smith
+Journal of Alpha Studies,Journal of Alpha Studies,2022,60,A. Smith
+Journal of Alpha Studies,Mainstream Science,2021,5,A. Smith
+Journal of Beta Research,Mainstream Science,2022,4,B. Jones
+Mainstream Science,Mainstream Science,2021,30,C. Lee
+Mainstream Science,Journal of Alpha Studies,2021,3,C. Lee
+Mainstream Science,Big Field Review,2021,40,C. Lee
+Big Field Review,Mainstream Science,2021,35,D. Park
+Big Field Review,Big Field Review,2021,12,D. Park
+Open Honest Journal,Mainstream Science,2022,20,E. Roy
+Open Honest Journal,Big Field Review,2022,18,E. Roy
+Open Honest Journal,Open Honest Journal,2022,2,E. Roy
+Predatory Gamma Letters,Predatory Gamma Letters,2021,5,F. Oz
+Predatory Gamma Letters,Predatory Gamma Letters,2022,70,F. Oz
+Predatory Gamma Letters,Delta Bulletin,2022,30,F. Oz
+Delta Bulletin,Predatory Gamma Letters,2022,28,G. Ng
+Delta Bulletin,Delta Bulletin,2022,8,G. Ng
