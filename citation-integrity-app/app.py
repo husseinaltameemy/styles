@@ -83,8 +83,19 @@ with st.sidebar:
         "CSV with at least **citing_journal** and **cited_journal**. "
         "Optional: `year`, `count`, `citing_author`."
     )
-    cit_file = st.file_uploader("Upload citations CSV", type="csv", key="cit")
+    st.caption(
+        "Also accepts a **Scopus export** (with the *References* field): "
+        "`Source title` is the citing journal and references are parsed into "
+        "cited journals automatically."
+    )
+    cit_file = st.file_uploader("Upload citations / Scopus CSV", type="csv", key="cit")
     use_sample = st.checkbox("Use bundled sample data", value=False)
+    extra_journals_raw = st.text_area(
+        "Extra journals to track in references (one per line, optional)",
+        help="For Scopus exports: also look for these journal names in the "
+        "reference lists, even if they have no articles in your file.",
+    )
+    extra_journals = [j.strip() for j in extra_journals_raw.splitlines() if j.strip()]
 
     st.header("2 · Retractions data")
     st.markdown("CSV with **journal** and **reason** (optional `year`, `doi`).")
@@ -105,7 +116,7 @@ retractions_df: pd.DataFrame | None = None
 
 try:
     if cit_file is not None:
-        citations_df = loaders.load_citations(cit_file.getvalue())
+        citations_df = loaders.load_citations(cit_file.getvalue(), extra_journals=extra_journals)
     elif use_sample:
         citations_df = loaders.load_citations(f"{SAMPLE_DIR}/citations.csv")
 except Exception as exc:  # noqa: BLE001

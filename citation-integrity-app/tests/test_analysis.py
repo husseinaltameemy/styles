@@ -39,6 +39,30 @@ def test_loader_missing_columns_raises():
         raise AssertionError("expected ValueError")
 
 
+def test_scopus_export_parsed_to_edges():
+    here = os.path.dirname(os.path.abspath(__file__))
+    df = loaders.load_citations(os.path.join(here, "..", "sample_data", "scopus_export.csv"))
+    assert {"citing_journal", "cited_journal", "count"} <= set(df.columns)
+    # Source title becomes the citing journal.
+    assert "Journal of Alpha Studies" in set(df["citing_journal"])
+    # Alpha cites Beta and Mainstream (cross-journal links extracted).
+    alpha = df[df["citing_journal"] == "Journal of Alpha Studies"]
+    cited = set(alpha["cited_journal"])
+    assert "Journal of Beta Research" in cited
+    # Self-citation captured (Alpha references Alpha).
+    assert "Journal of Alpha Studies" in cited
+
+
+def test_scopus_without_references_gives_helpful_error():
+    csv = "Authors,Title,Source title,Cited by,EID,Document Type\nA,T,J Foo,3,x,Article\n"
+    try:
+        loaders.load_citations(csv)
+    except ValueError as exc:
+        assert "References" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("expected ValueError mentioning References")
+
+
 def test_cartel_detects_reciprocal_pair():
     res = cartels.analyze(_citations())
     pair_keys = {

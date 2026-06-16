@@ -69,6 +69,23 @@ matched flexibly (e.g. `source`/`target` also work).
 
 A row where `citing_journal == cited_journal` is a **self-citation**.
 
+#### Scopus exports (auto-detected)
+
+You can also upload a **Scopus document export** directly — no manual reshaping.
+When exporting from Scopus, choose **Export → CSV** and tick the **References**
+field (under *Citation information*). The app then:
+
+- uses each article's **`Source title`** as the **citing journal**, and
+- scans its **`References`** text for journal names, turning each match into a
+  **cited journal** link (weighted by how often it appears, self-citations
+  included).
+
+Only journals that appear as a `Source title` in the file are tracked as
+citation targets by default — that's the set under analysis. Use the sidebar
+**"Extra journals to track in references"** box to also watch for journals that
+have no articles in your export. If you upload a Scopus file *without* the
+References field, the app tells you exactly what to re-export.
+
 ### Retractions CSV
 | column    | required | notes                                       |
 |-----------|----------|---------------------------------------------|
