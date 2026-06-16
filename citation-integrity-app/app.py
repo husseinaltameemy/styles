@@ -14,6 +14,7 @@ import streamlit as st
 from integrity import (
     cartels,
     coercion,
+    editor_citation,
     loaders,
     report,
     retractions,
@@ -67,7 +68,7 @@ def _citation_network_figure(graph, clusters):
 
 st.set_page_config(page_title="Citation & Editorial Integrity", layout="wide")
 
-APP_VERSION = "1.2 — Scopus References support"
+APP_VERSION = "1.3 — Editor/author citation tracing"
 
 st.title("🔎 Citation & Editorial Integrity Analyzer")
 st.caption(
@@ -100,12 +101,31 @@ with st.sidebar:
     )
     extra_journals = [j.strip() for j in extra_journals_raw.splitlines() if j.strip()]
 
-    st.header("2 · Retractions data")
+    st.header("2 · Editor / author citation")
+    st.markdown(
+        "Detect a person (e.g. an **Editor-in-Chief**) citing a journal heavily "
+        "in papers they publish **elsewhere**."
+    )
+    editor_target = st.text_input(
+        "Target journal to trace citations to",
+        help="The journal under scrutiny, e.g. 'Journal of Techniques'. Also add "
+        "it to the 'Extra journals to track' box above so it is matched inside "
+        "reference lists.",
+        key="editor_target",
+    )
+    editor_author = st.text_input(
+        "Focal author / editor name (optional)",
+        help="Limit the analysis to articles authored by this person, e.g. "
+        "'Smith J.'. Leave blank to rank all authors instead.",
+        key="editor_author",
+    )
+
+    st.header("3 · Retractions data")
     st.markdown("CSV with **journal** and **reason** (optional `year`, `doi`).")
     ret_file = st.file_uploader("Upload retractions CSV", type="csv", key="ret")
     fetch_rw = st.button("Fetch from Retraction Watch (online)")
 
-    st.header("3 · Online lookup (optional)")
+    st.header("4 · Online lookup (optional)")
     oa_name = st.text_input("Look up a journal on OpenAlex")
     oa_go = st.button("Search OpenAlex")
 
@@ -157,10 +177,16 @@ if oa_go and oa_name.strip():
 # --------------------------------------------------------------------------- #
 cartel_res = selfcite_res = coercion_res = retraction_res = None
 
+editor_res = None
+
 if citations_df is not None and not citations_df.empty:
     cartel_res = cartels.analyze(citations_df)
     selfcite_res = self_citation.analyze(citations_df)
     coercion_res = coercion.analyze(citations_df)
+    if editor_target.strip():
+        editor_res = editor_citation.analyze(
+            citations_df, editor_target.strip(), editor_author.strip() or None
+        )
 
 if retractions_df is not None and not retractions_df.empty:
     retraction_res = retractions.analyze(retractions_df)
@@ -180,6 +206,7 @@ tabs = st.tabs(
         "📊 Overview",
         "🕸️ Cartels",
         "🔁 Self-citation",
+        "🧑‍⚖️ Editor / author",
         "🧭 Coercion",
         "⚠️ Retractions",
         "📝 Report",
@@ -289,8 +316,77 @@ with tabs[3]:
     else:
         st.info("No citations data loaded.")
 
-# --- Coercion --------------------------------------------------------------- #
+# --- Editor / author -------------------------------------------------------- #
 with tabs[4]:
+    st.subheader("Editor / author citation to a target journal")
+    st.caption(
+        "Splits every citation **to the target journal** into *internal* (from "
+        "articles in that journal) and *external* (from articles published "
+        "elsewhere). A high external share concentrated in one person is a "
+        "screening indicator of editor-driven citation inflation — not proof."
+    )
+    if editor_res is None:
+        st.info(
+            "Enter a **Target journal** in the sidebar (section 2) to run this "
+            "analysis. Tip: also add that journal to *Extra journals to track* so "
+            "its name is detected inside reference lists."
+        )
+    elif editor_res["target"] is None:
+        st.warning(editor_res["note"])
+    else:
+        s = editor_res["summary"]
+        who = editor_res["author"] or "all authors"
+        st.markdown(
+            f"Tracing citations to **{editor_res['target']}** "
+            f"(author filter: *{who}*)."
+        )
+        badge = {"High": "🔴", "Elevated": "🟠", "Watch": "🟡", "Low": "🟢"}
+        st.markdown(
+            f"**Concern level: {badge.get(editor_res['level'], '')} "
+            f"{editor_res['level']}**"
+        )
+        cols = st.columns(4)
+        cols[0].metric("External papers citing it", s.get("external_papers", 0))
+        cols[1].metric("External citations", s.get("external_citations", 0))
+        cols[2].metric(
+            "External share",
+            f"{s.get('external_share', 0) * 100:.0f}%",
+            help="Share of all citations to the target journal that come from "
+            "articles published in *other* journals.",
+        )
+        cols[3].metric("Outside venues used", s.get("n_external_venues", 0))
+
+        if not editor_res["by_author"].empty:
+            st.subheader("Who cites the target journal from outside")
+            st.caption(
+                "Authors ranked by how often they cite the target journal in "
+                "papers published elsewhere. The top name is the prime suspect "
+                "for editor-style self-promotion."
+            )
+            st.dataframe(editor_res["by_author"], use_container_width=True)
+
+        if not editor_res["by_venue"].empty:
+            st.subheader("Outside journals used to cite the target")
+            st.dataframe(editor_res["by_venue"], use_container_width=True)
+
+        if not editor_res["by_year"].empty:
+            st.subheader("External citations over time")
+            st.bar_chart(editor_res["by_year"].set_index("year")["citations_to_target"])
+
+        if s.get("internal_citations"):
+            st.caption(
+                f"For context: {s['internal_citations']} citation(s) to the target "
+                f"came from within the target journal itself (ordinary journal "
+                f"self-citation, shown on the Self-citation tab)."
+            )
+        st.caption(
+            "Screening indicator only. Frequent citation of a leading field "
+            "journal can be entirely legitimate; treat results as a prompt for "
+            "a closer manual review of the flagged author's reference lists."
+        )
+
+# --- Coercion --------------------------------------------------------------- #
+with tabs[5]:
     if coercion_res:
         if not coercion_res["has_author_data"]:
             st.caption(
@@ -307,7 +403,7 @@ with tabs[4]:
         st.info("No citations data loaded.")
 
 # --- Retractions ------------------------------------------------------------ #
-with tabs[5]:
+with tabs[6]:
     if retraction_res:
         st.subheader("Editorial-integrity scores")
         st.dataframe(retraction_res["scores"], use_container_width=True)
@@ -319,7 +415,7 @@ with tabs[5]:
         st.info("No retractions data loaded. Upload a CSV or fetch from Retraction Watch.")
 
 # --- Report ----------------------------------------------------------------- #
-with tabs[6]:
+with tabs[7]:
     md = report.build_report(cartel_res, selfcite_res, coercion_res, retraction_res)
     st.markdown(md)
     st.download_button(

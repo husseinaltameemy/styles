@@ -11,7 +11,16 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from integrity import cartels, coercion, loaders, report, retractions, scorecard, self_citation
+from integrity import (
+    cartels,
+    coercion,
+    editor_citation,
+    loaders,
+    report,
+    retractions,
+    scorecard,
+    self_citation,
+)
 
 
 def _citations() -> pd.DataFrame:
@@ -120,6 +129,32 @@ def test_scorecard_ranks_journals():
     order = {"High": 0, "Elevated": 1, "Watch": 2, "Low": 3}
     levels = [order[v] for v in card["concern_level"]]
     assert levels == sorted(levels)
+
+
+def test_editor_external_citation_detected():
+    here = os.path.dirname(os.path.abspath(__file__))
+    cits = loaders.load_citations(
+        os.path.join(here, "..", "sample_data", "scopus_export.csv")
+    )
+    # Jones B. publishes in Journal of Beta Research but cites Journal of Alpha
+    # Studies from there => an external citation to the target journal.
+    res = editor_citation.analyze(cits, "Journal of Alpha Studies", "Jones B.")
+    assert res["target"] == "Journal of Alpha Studies"
+    assert res["summary"]["external_papers"] >= 1
+    assert res["summary"]["external_citations"] >= 1
+    # The external venue used is the Beta journal, not the target itself.
+    venues = set(res["by_venue"]["external_venue"])
+    assert "Journal of Beta Research" in venues
+    assert "Journal of Alpha Studies" not in venues
+    # Author ranking surfaces Jones B.
+    assert "Jones B." in set(res["by_author"]["author"])
+
+
+def test_editor_target_not_found():
+    cits = loaders.load_citations("source,target\nA,B\nB,A\n")
+    res = editor_citation.analyze(cits, "Nonexistent Journal")
+    assert res["target"] is None
+    assert "Nonexistent Journal" in res["note"]
 
 
 def test_report_builds():
